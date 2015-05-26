@@ -1,0 +1,13 @@
+{
+	"success":true,
+	"message":"This is data sample.",
+	"data": [
+		{"name":"Android", "value":"53.2%"},
+		{"name":"Android 2", "value":"53.2%"},
+		{"name":"Apple", "value":"41.3%"},
+		{"name":"Apple 5", "value":"41.3%"},
+		{"name":"Microsoft", "value":"3.6%"},
+		{"name":"BlackBerry", "value":"1.8%"},
+		{"name":"Symbian", "value":"0.1%"}
+	]
+}
