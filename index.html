@@ -2,7 +2,168 @@
 <html> 
 	<head>
 		<meta charset="utf-8">
-		<link rel="stylesheet" type="text/css" href="style.css">
+		<style>
+div.dropdown-wrapper {
+	position: relative;
+	width: 300px;
+  outline: none;
+  font-size: 18px;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+div.dropdown-wrapper .active {
+	border-radius: 4px 4px 0 0;
+}
+
+div.dropdown-wrapper .active .arrow:after {
+  border-width: 0 6px 6px 6px;
+}
+
+div.dropdown-wrapper .active + ul.dropdown-list {
+  display: block;
+  pointer-events: auto;
+}
+
+div.dropdown-wrapper .error {
+	border-color: #F00;
+}
+
+div.dropdown-wrapper div.dropdown-input {
+	font-weight: 700;
+	border: 1px solid #BBB;
+	border-radius: 4px;
+	position: absolute;
+	background-color: #fdfdfd;
+}
+
+div.dropdown-wrapper div.dropdown-input input[type=text] {
+  width: 230px;
+  height: 36px;
+  position: relative;
+  height: 42px;
+  padding-left: 10px;
+  margin-right: 42px;
+  outline: 0;
+  border: 0;
+  font-size: initial;
+}
+
+div.dropdown-wrapper div.dropdown-input span {
+	cursor: pointer;
+	position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 40px;
+  line-height: 40px;
+  border-left: 1px solid #E2E7EA;
+  text-align: center;
+  color: #999;
+}
+
+div.dropdown-wrapper div.dropdown-input span.arrow:after {
+  content: "";
+  left: 15px;
+  top: 20px;
+  border-width: 6px 6px 0 6px;
+  border-style: solid;
+  border-color: #BBB transparent;
+  position: absolute;
+  z-index: 1;
+}
+
+div.dropdown-wrapper div.dropdown-input .spinner {
+  min-width: 24px;
+   min-height: 24px;
+}
+ 
+div.dropdown-wrapper div.dropdown-input .spinner:before {
+  content: 'Loading…';
+  position: absolute;
+  top: 30%;
+  left: 28%;
+  width: 16px;
+  height: 16px;
+  z-index: 1;
+}
+ 
+div.dropdown-wrapper div.dropdown-input .spinner:not(:required):before {
+  content: '';
+  border-radius: 50%;
+  border: 2px solid rgba(0, 0, 0, .3);
+  border-top-color: rgba(0, 0, 0, .6);
+  animation: spinner .6s linear infinite;
+  -webkit-animation: spinner .6s linear infinite;
+}
+
+div.dropdown-wrapper ul.dropdown-list {
+	display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background: #FFF;
+  max-height: 300px;
+  overflow: auto;
+  margin: 0;
+  padding: 0;
+  top: 46px;
+  width: 285px;
+  line-height: 1;
+  border: 1px solid #BBB;
+  border-top: none;
+  -webkit-border-radius: 0px 0px 4px 4px;
+  border-radius: 0px 0px 4px 4px;
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  -webkit-box-shadow: 0px 3px 10px 0 rgba(0, 0, 0, 0.2);
+  box-shadow: 0px 3px 10px 0 rgba(0, 0, 0, 0.2);
+  z-index: 10;
+}
+
+div.dropdown-wrapper ul.dropdown-list li {
+	border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+	max-height: 400px;
+  display: block;
+  text-decoration: none;
+	list-style: none;
+  padding: 10px 10px;
+  color: #414141;
+}
+
+div.dropdown-wrapper ul.dropdown-list li:hover {
+	background-color: #FFBC35;
+  color: #FFF;
+}
+
+div.dropdown-wrapper ul.dropdown-list li.hovering {
+  background: #FFBC35;
+  color: #FFF;
+}
+
+div.dropdown-wrapper ul.dropdown-list li a {
+  text-decoration: none;
+}
+
+div.dropdown-wrapper ul.dropdown-list span.dropdown-value {
+	float: right;
+  font-size: 14px;
+  margin-top: 5px;
+}
+
+div.dropdown-wrapper ul.dropdown-list li.selected {
+  background-color: #eee;
+}
+
+@keyframes spinner {
+  to {transform: rotate(360deg);}
+}
+ 
+@-webkit-keyframes spinner {
+  to {-webkit-transform: rotate(360deg);}
+}
+		</style>
 		<script type='text/javascript' src='//code.jquery.com/jquery-1.7.0.js'></script>
 	</head>
 
@@ -10,7 +171,7 @@
 		<p>Dropdown with Inputbox Demo</p>
 
 		<div id="dropdown" class="dropdown-wrapper">
-			<div class="dropdown-input">å
+			<div class="dropdown-input">
 				<input type="text" class="input-name" placeholder="Resources by Name">
 				<span class="arrow"></span>
 			</div>
@@ -34,8 +195,322 @@
 		</div>
 
 
-<script type='text/javascript' src='srhdropdown.js'></script>
 <script>
+/*
+ *  Project: jQuery plugin for dropdown search
+ */
+;(function ($, window, document, undefined) {
+	"use strict";
+
+	var pluginName = "srhdropdown",
+		dataKey = "plugin_" + pluginName;
+
+  var Plugin = function(element, options) {
+		this.$element = null;
+		this.element = element;
+		this._name = pluginName;
+    this._defaults = $.fn.srhdropdown.defaults;
+		this.options = $.extend({}, this._defaults, options);
+		this.init(options);
+  };
+
+	Plugin.prototype = {
+		init: function(options) {
+			this.$element = options.useCache ? $(this.element) : this.element;
+    	this.bindEvents();
+		},
+		destroy: function() {
+			this.unbindEvents();
+			this.$element.removeData();
+		},
+		// bind events that trigger methods
+		bindEvents: function() {
+			var plugin = this;
+			plugin.$element.find('input.input-name').on('keyup.' + plugin._name, function(evt) {
+				var str = $(this).val(),
+					code = evt.keyCode || evt.which,
+					elem = plugin.$element.find('ul.dropdown-list');
+			  switch (code) {
+      	case 13:
+					if ($(this).is(':focus')) {
+						if (str.length > plugin.options.textLimit) {
+							plugin.callback(plugin.options.onEnter);
+						}
+						else {
+							if (!plugin.options.expanded) {
+								$(this).parent().addClass('error');
+							}
+						}
+					}
+   				evt.stopPropagation();
+   				break;
+      	case 40: // arrow down
+	      	plugin.expandDropdown.call(plugin);
+   				if (plugin.options.itemCount) {
+						var curitem = plugin.findDropdownItem.call(plugin, elem);
+						curitem.find('a').focus();
+						//plugin.setBrowseItem.call(plugin, curitem);
+					}
+      	  evt.stopPropagation();
+   				break;
+   			case 8: // backspace
+   			case 46: // delete
+ 					if (str.length <= plugin.options.textLimit) {
+						var elem = plugin.$element.find('ul.dropdown-list');
+						plugin.emptyDropdown.call(plugin, elem);
+						plugin.collapseDropdown.call(plugin);
+						plugin.setItemCount.call(plugin, 0);
+					}
+   				evt.stopPropagation();
+   				break;
+      	default:
+					var typed = String.fromCharCode(evt.keyCode);
+					if (/[a-zA-Z0-9-_ ]/.test(typed)) {
+						if (str.length > plugin.options.textLimit) {
+							plugin.setSpinner.call(plugin, $(this).parent().children('span'), true);
+							plugin.getDropdownData.call(plugin, str);
+							plugin.expandDropdown.call(plugin);
+							plugin.setSpinner.call(plugin, $(this).parent().children('span'), false);
+							$(this).parent().removeClass('error');
+						}
+					}
+				}
+			});
+			plugin.$element.find('ul.dropdown-list').on('keyup.' + plugin._name, function(evt) {
+				var code = evt.keyCode || evt.which;
+			  switch (code) {
+				case 13: // enter
+					var curobj = plugin.$element.find('li.hovering'),
+						keyword = curobj.find('a').attr('data-value');
+					if (keyword) {
+						plugin.setSelectItem.call(plugin, curobj, keyword);
+					}
+					plugin.collapseDropdown.call(plugin);
+         	plugin.$element.find('input.input-name').focus();
+         	evt.stopPropagation();
+					break;
+				case 38: // arrow up
+          plugin.expandDropdown.call(plugin);
+          if (plugin.options.expanded) {
+          	var prev = plugin.findDropdownItem.call(plugin, $(this), true);
+          	plugin.setBrowseItem.call(plugin, prev);
+          }
+					break;			  	
+      	case 40: // arrow down
+	          plugin.expandDropdown.call(plugin);
+          if (plugin.options.expanded) {
+          	var next = plugin.findDropdownItem.call(plugin, $(this));
+          	plugin.setBrowseItem.call(plugin, next);
+          }
+					break;
+				}
+			});
+			plugin.$element.find('input.input-name, span.arrow').on('click.' + plugin._name, function() {
+				if (plugin.options.expanded) {
+					plugin.collapseDropdown.call(plugin);
+				}
+				else {
+					var elem = plugin.$element.find('ul.dropdown-list');
+					plugin.expandDropdown.call(plugin);
+					if (plugin.options.itemCount) {
+						var curitem = plugin.findDropdownItem.call(plugin, elem);
+						curitem.find('a').focus();
+					}
+				}
+			});
+		},
+		// unbind events in plugin's namespace that are attached to "this.$element"
+		unbindEvents: function(namespace) {
+			if (namespace) {
+				this.$element.off('.' + namespace);
+			}
+			else {
+				this.$element.off('.' + this._name);
+			}
+		},
+		// callback function definition
+		callback: function(callOption) {
+			if (callOption) {
+				if (typeof callOption === 'function') {
+					callOption.call(this.$element);
+				}
+			}
+		},
+		findDropdownItem: function(elem, reverse) {
+      var curobj = elem.find('li.hovering');
+      if (!curobj.length) {
+				curobj = elem.find('li.selected');
+      	if (!curobj.length) {
+	      	curobj = elem.children().first();
+	      }
+      }
+     	curobj = reverse ? curobj.prev() : curobj.next();
+	    if (!curobj.length) {
+		  	curobj = reverse ? elem.children().last() : elem.children().first();
+  	 	}
+      return curobj;
+		},		
+		// expand dropdown
+		expandDropdown: function() {
+			if (this.options.itemCount) {
+				if (!this.$element.find('div.dropdown-input').hasClass('active')) {
+					this.$element.find('ul.dropdown-list').children().removeClass('hovering');
+					this.$element.find('div.dropdown-input').addClass('active');
+	 				this.$element.find('div.dropdown-input').animate({
+	 					scrollTop: this.$element.find('div.dropdown-input').offset().top
+	 				}, 'slow');
+	 			}
+				this.options.expanded = true;
+			}
+		},
+		// expand dropdown
+		collapseDropdown: function() {
+			if (this.options.itemCount) {
+				this.$element.find('ul.dropdown-list').children().removeClass('hovering');
+				this.$element.find('div.dropdown-input').removeClass('active');
+				this.options.expanded = false;
+			}
+		},
+		// empty list in dropdown
+		emptyDropdown: function(elem) {
+			elem.empty();
+		},
+		findItemKey: function(obj, prop, str) {
+			var keys = [],
+				strTemp = str;
+		  for (var key in obj) {
+        if ( obj[key].hasOwnProperty(prop) ) {
+        	var tempVal = obj[key][prop].toLowerCase();
+        	strTemp = strTemp.toLowerCase();
+        	if (tempVal.indexOf(strTemp)!== -1) {
+	          keys.push({
+  	    		  name: obj[key]['name'],
+    	    		value: obj[key]['value']
+				    });
+	        }
+        }
+    	}
+	    return keys;
+		},
+		// get json data to populate the list
+		getDropdownData: function(str) {
+			var plugin = this,
+				itemData = null;
+			if (plugin.options.itemData) {
+				var res = plugin.options.itemData;
+				itemData = plugin.findItemKey.call(plugin, res.data, 'name', str);
+				plugin.setDropdownList.call(plugin, itemData);
+			}
+			else if (plugin.options.dataUrl) {
+				if (plugin.options.usePost) {
+					// if you want to POST call, otherwise no need to use it
+					var jqxhr = $.ajax({
+					  dataType: 'json',
+					  url: plugin.options.dataUrl,
+					  data: str
+					}).done(function(res) {
+						itemData = res.data;
+						plugin.setDropdownList.call(plugin, itemData);
+					});
+				}
+				else {
+					var jqxhr = $.getJSON(this.options.dataUrl);
+					jqxhr.done(function(res) {
+						itemData = plugin.findItemKey.call(plugin, res.data, 'name', str);
+						plugin.setDropdownList.call(plugin, itemData);
+					});
+				}				
+			}
+		},
+		// display list from json and append items & events
+		setDropdownList: function(itemData) {
+			var plugin = this,
+				elem = plugin.$element.find('ul.dropdown-list');
+			if (elem.length) {
+				plugin.unbindEvents.call(plugin, plugin._name + '-dditem');
+				if (itemData) {
+					var html = '',
+						itemCount = 0;
+					$.each(itemData, function(idx, rec) {
+					  html += '<li class="dropdown-item">';
+					  html += rec.name ? '<a href="#" data-value="' + rec.name + '">' + rec.name + '</a>' : '';
+					  html += rec.value ? '<span class="dropdown-value">' + rec.value + '</span>' : '';
+					  html += '</li>';
+					  itemCount++;
+					});
+					plugin.setItemCount.call(plugin, itemCount);
+					plugin.emptyDropdown.call(plugin, elem);
+					elem.append(html);
+					elem.children('li.dropdown-item').on('mouseup.' + plugin._name + '-dditem', function() {
+						var keyword = $(this).children('a').attr('data-value');
+						if (keyword) {
+							plugin.setSelectItem.call(plugin, $(this), keyword);
+							plugin.collapseDropdown.call(plugin);
+							plugin.$element.find('input.input-name').focus();
+						}
+					});
+				}
+			}
+		},
+		setBrowseItem: function(elem) {
+			if (this.options.itemCount) {
+				elem.parent().children().removeClass('hovering');
+				elem.addClass('hovering');
+			}
+		},
+		// select dropdown
+		setSelectItem: function(elem, keyword) {
+			if (this.options.itemCount) {
+				elem.parent().children().removeClass('selected');
+				elem.addClass('selected');
+				this.$element.find('input.input-name').val(keyword);
+			}
+		},		
+		setSpinner: function(elem, active) {
+			if (this.options.useSpinner) {
+				active ? elem.removeClass('arrow').addClass('spinner') : elem.removeClass('spinner').addClass('arrow');
+			}
+		},
+		setItemCount: function(count) {
+			this.options.itemCount = count;
+		},
+	};
+
+	/*
+	 * Plugin wrapper, preventing against multiple instantiations and
+	 * return plugin instance.
+	 */
+	$.fn[pluginName] = function(options) {
+		var plugin = this.data(dataKey);
+		// has plugin instantiated?
+		if (plugin instanceof Plugin) {
+			// if have options arguments, call plugin.init() again
+			if (typeof options !== 'undefined') {
+				plugin.init(options);
+			}
+		} else {
+			plugin = new Plugin(this, options);
+			this.data(dataKey, plugin);
+		}
+		return plugin;
+	};
+
+  $.fn.srhdropdown.defaults = {
+    dataUrl: '',
+    itemData: null,
+    useSpinner: true,
+    useCache: false,
+    usePost: false,
+    expanded: false,
+    itemCount: 0,
+    textLimit: 1,
+    onComplete: null,
+    onEnter: null
+  };
+
+}(jQuery, window, document));	
+
+
 /**
  * Implementation plugin sample
  */
@@ -47,7 +522,25 @@
 	    dataUrl: 'sample.json',
 	    onEnter: function() {
 	    	alert('Hello ' + $(this).find('input.input-name').val());
-	    }
+	    },
+	    itemData: {
+				"success":true,
+				"message":"This is data sample.",
+				"data": [
+					{"name":"Lalavel", "value":"25.85"},
+					{"name":"Phalcon", "value":"16.73"},
+					{"name":"Symfony2", "value":"10.02"},
+					{"name":"CodeIgniter", "value":"7.62"},
+					{"name":"Yii", "value":"7.61"},
+					{"name":"Aura", "value":"4.51"},
+					{"name":"CakePHP", "value":"4.51"},
+					{"name":"Zend Framework 2", "value":"4.51"},
+					{"name":"Zend Framework 1", "value":"3.01"},
+					{"name":"Kohana", "value":"1.55"},
+					{"name":"Silex", "value":"1.52"},
+					{"name":"Slim", "value":"1.50"}
+				]
+			}
 		});
 
 		$('div#dropdown2').srhdropdown({
@@ -55,7 +548,25 @@
 	    dataUrl: 'sample.json',
 	    onEnter: function() {
 	    	alert('Alejate ' + $(this).find('input.input-name').val());
-	    }
+	    },
+	    itemData: {
+				"success":true,
+				"message":"This is data sample.",
+				"data": [
+					{"name":"Lalavel", "value":"25.85"},
+					{"name":"Phalcon", "value":"16.73"},
+					{"name":"Symfony2", "value":"10.02"},
+					{"name":"CodeIgniter", "value":"7.62"},
+					{"name":"Yii", "value":"7.61"},
+					{"name":"Aura", "value":"4.51"},
+					{"name":"CakePHP", "value":"4.51"},
+					{"name":"Zend Framework 2", "value":"4.51"},
+					{"name":"Zend Framework 1", "value":"3.01"},
+					{"name":"Kohana", "value":"1.55"},
+					{"name":"Silex", "value":"1.52"},
+					{"name":"Slim", "value":"1.50"}
+				]
+			}
 		});
 
 	});
