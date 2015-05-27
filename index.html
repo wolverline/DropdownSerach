@@ -1,1 +1,74 @@
-My Page
+<!doctype html>
+<html> 
+	<head>
+		<meta charset="utf-8">
+		<link rel="stylesheet" type="text/css" href="style.css">
+		<script type='text/javascript' src='//code.jquery.com/jquery-1.7.0.js'></script>
+	</head>
+
+	<body>
+		<p>Dropdown with Inputbox Demo</p>
+
+		<div id="dropdown" class="dropdown-wrapper">
+			<div class="dropdown-input">å
+				<input type="text" class="input-name" placeholder="Resources by Name">
+				<span class="arrow"></span>
+			</div>
+			<ul class="dropdown-list"><li></li></ul>
+		</div>
+
+
+		<p>&nbsp;</p>
+		<p>&nbsp;</p>
+		<p>&nbsp;</p>
+		<p>&nbsp;</p>
+
+		<p>Dropdown with Inputbox Demo 2</p>
+
+		<div id="dropdown2" class="dropdown-wrapper">
+			<div class="dropdown-input">
+				<input type="text" class="input-name" placeholder="Resources by Name">
+				<span class="arrow"></span>
+			</div>
+			<ul class="dropdown-list"><li></li></ul>
+		</div>
+
+
+<script type='text/javascript' src='srhdropdown.js'></script>
+<script>
+/**
+ * Implementation plugin sample
+ */
+(function($) {
+	$(document).ready(function() {
+		// Init plugin
+		$('div#dropdown').srhdropdown({
+	    useCache: true,
+	    dataUrl: 'sample.json',
+	    onEnter: function() {
+	    	alert('Hello ' + $(this).find('input.input-name').val());
+	    }
+		});
+
+		$('div#dropdown2').srhdropdown({
+	    useCache: true,
+	    dataUrl: 'sample.json',
+	    onEnter: function() {
+	    	alert('Alejate ' + $(this).find('input.input-name').val());
+	    }
+		});
+
+	});
+
+}( jQuery ));
+</script>
+
+
+	</body>
+
+</html>
+
+
+
+
+
